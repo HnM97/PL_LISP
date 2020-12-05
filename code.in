@@ -1,1 +1,4 @@
-> (CAR LIST(5 5 5))
+(SETQ a 10)
+(SETQ b 5)
+(LIST a '(a,b)))
+(LIST '(a, (a,b)) a)

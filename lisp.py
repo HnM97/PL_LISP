@@ -8,26 +8,26 @@ List   = list             # A Scheme List is implemented as a Python list
 Exp    = (Atom, List)     # A Scheme expression is an Atom or List
 Env    = dict             # A Scheme environment (defined below) 
                             # is a mapping of {variable: value}
-def tokenize(chars: str) -> list:
-    "Convert a string of characters into a list of tokens."
-    return chars.replace('(', ' ( ').replace(')', ' ) ').replace('\'', ' \' ').split()
-
-def parse(program: str) -> Exp:
+def parse(program):
     "Read a Scheme expression from a string."
     return read_from_tokens(tokenize(program))
 
-def read_from_tokens(tokens: list) -> Exp:
+def tokenize(s):
+    "Convert a string into a list of tokens."
+    return s.replace('(',' ( ').replace(')',' ) ').split()
+
+def read_from_tokens(tokens):
     "Read an expression from a sequence of tokens."
     if len(tokens) == 0:
-        raise SyntaxError('unexpected EOF')
+        raise SyntaxError('unexpected EOF while reading')
     token = tokens.pop(0)
-    if token == '(':
+    if '(' == token:
         L = []
         while tokens[0] != ')':
             L.append(read_from_tokens(tokens))
         tokens.pop(0) # pop off ')'
         return L
-    elif token == ')':
+    elif ')' == token:
         raise SyntaxError('unexpected )')
     else:
         return atom(token)
@@ -70,7 +70,6 @@ def standard_env() -> Env:
         'procedure?': callable,
         'round':   round,
         'symbol?': lambda x: isinstance(x, Symbol),
-        
     })
     return env
 
@@ -100,7 +99,8 @@ def eval(x, env=global_env):
         return x   
     op, *args = x       
     if op == '\'':            # quotation
-        return args[0]
+        #eval('\'',env)
+        return args[1:]
     elif op == 'if':             # conditional
         (test, conseq, alt) = args
         exp = (conseq if eval(test, env) else alt)
@@ -117,17 +117,24 @@ def eval(x, env=global_env):
         return Procedure(parms, body, env)
     else:                        # procedure call
         proc = eval(op, env)
-        vals = [eval(arg, env) for arg in args]
-        print(vals)
+        vals = []
+        flag= False
+        for arg in args :
+            if arg == '\'':
+                flag = True
+            elif flag == True:
+                vals.append(arg)
+            elif flag == False:
+                vals.append(eval(arg,env))
         return proc(*vals)
 
 
 
-f = open("C:/Python_WorkSpace/PL/code.in", 'r')
+f = open("C:/PL_LISP/code.in", 'r')
 inputs = f.readlines()
 
 for line in inputs:
-    eval(parse(line))
+    print(eval(parse(line)))
 
             
 
