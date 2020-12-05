@@ -14,7 +14,7 @@ def parse(program):
 
 def tokenize(s):
     "Convert a string into a list of tokens."
-    return s.replace('(',' ( ').replace(')',' ) ').split()
+    return s.replace('(',' ( ').replace(')',' ) ').replace('\n', ' ').split()
 
 def read_from_tokens(tokens):
     "Read an expression from a sequence of tokens."
@@ -98,17 +98,14 @@ def eval(x, env=global_env):
     elif not isinstance(x, List):# constant
         return x   
     op, *args = x       
-    if op == '\'':            # quotation
-        #eval('\'',env)
-        return args[1:]
-    elif op == 'if':             # conditional
+    if op == 'if':             # conditional
         (test, conseq, alt) = args
         exp = (conseq if eval(test, env) else alt)
         return eval(exp, env)
-    elif op == 'SETQ':         # definition
+    elif op == 'SETQ':         # definition        
         (symbol, exp) = args
         env[symbol] = eval(exp, env)
-        print(env[symbol])
+        print(symbol)
     elif op == 'set!':           # assignment
         (symbol, exp) = args
         env.find(symbol)[symbol] = eval(exp, env)
@@ -124,21 +121,43 @@ def eval(x, env=global_env):
                 flag = True
             elif flag == True:
                 vals.append(arg)
+                flag = False
             elif flag == False:
                 vals.append(eval(arg,env))
         return proc(*vals)
 
-
+def printList(List : list) :
+    print("(", end="")
+    for element in List:
+        if type(element) == list :
+            printList(element)
+        else:
+            if element == List[len(List)-1]:
+                print(element, end ="")
+            else :
+                print(element, end= " ")
+    print(")", end="")
 
 f = open("C:/PL_LISP/code.in", 'r')
 inputs = f.readlines()
 
 for line in inputs:
-    print(eval(parse(line)))
+    result = eval(parse(line))
+    if type(result) == list:
+        print("(",end="")
+        for element in result:
+            if type(element) == list :
+                printList(element)
+                if(element == result[len(result)-1]):
+                    print(end="")
+                else:
+                    print(end=" ")
+            else:
+                if element == result[len(result)-1]:
+                    print(element, end="")
+                else:
+                    print(element, end=" ")
+        print(") ",end="\n")
 
-            
-
-
-            
 f.close()
 

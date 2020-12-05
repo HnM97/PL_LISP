@@ -1,4 +1,4 @@
-(SETQ a 10)
-(SETQ b 5)
-(LIST a '(a,b)))
-(LIST '(a, (a,b)) a)
+(SETQ A 10)
+(SETQ B 5)
+(LIST A '(A B))
+(LIST '(B (A B)) A)
