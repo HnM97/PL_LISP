@@ -10,7 +10,7 @@ Env    = dict             # A Scheme environment (defined below)
                             # is a mapping of {variable: value}
 def tokenize(chars: str) -> list:
     "Convert a string of characters into a list of tokens."
-    return chars.replace('(', ' ( ').replace(')', ' ) ').split()
+    return chars.replace('(', ' ( ').replace(')', ' ) ').replace('\'', ' \' ').split()
 
 def parse(program: str) -> Exp:
     "Read a Scheme expression from a string."
@@ -70,28 +70,56 @@ def standard_env() -> Env:
         'procedure?': callable,
         'round':   round,
         'symbol?': lambda x: isinstance(x, Symbol),
+        
     })
     return env
 
+class Env(dict):
+    "An environment: a dict of {'var':val} pairs, with an outer Env."
+    def __init__(self, parms=(), args=(), outer=None):
+        self.update(zip(parms, args))
+        self.outer = outer
+    def find(self, var):
+        "Find the innermost Env where var appears."
+        return self if (var in self) else self.outer.find(var)
+    
+class Procedure(object):
+    "A user-defined Scheme procedure."
+    def __init__(self, parms, body, env):
+        self.parms, self.body, self.env = parms, body, env
+    def __call__(self, *args): 
+        return eval(self.body, Env(self.parms, args, self.env))
+
 global_env = standard_env()
 
-def eval(x: Exp, env=global_env) -> Exp:
+def eval(x, env=global_env):
     "Evaluate an expression in an environment."
-    if isinstance(x, Symbol):        # variable reference
-        return env[x]
-    elif isinstance(x, Number):      # constant number
-        return x                
-    elif x[0] == 'IF':               # conditional
-        (_, test, conseq, alt) = x
+    if isinstance(x, Symbol):    # variable reference
+        return env.find(x)[x]
+    elif not isinstance(x, List):# constant
+        return x   
+    op, *args = x       
+    if op == '\'':            # quotation
+        return args[0]
+    elif op == 'if':             # conditional
+        (test, conseq, alt) = args
         exp = (conseq if eval(test, env) else alt)
         return eval(exp, env)
-    elif x[0] == 'SETQ':           # definition
-        (_, symbol, exp) = x
+    elif op == 'SETQ':         # definition
+        (symbol, exp) = args
         env[symbol] = eval(exp, env)
-    else:                            # procedure call
-        proc = eval(x[0], env)
-        args = [eval(arg, env) for arg in x[1:]]
-        return proc(*args)
+        print(env[symbol])
+    elif op == 'set!':           # assignment
+        (symbol, exp) = args
+        env.find(symbol)[symbol] = eval(exp, env)
+    elif op == 'lambda':         # procedure
+        (parms, body) = args
+        return Procedure(parms, body, env)
+    else:                        # procedure call
+        proc = eval(op, env)
+        vals = [eval(arg, env) for arg in args]
+        print(vals)
+        return proc(*vals)
 
 
 
@@ -99,9 +127,7 @@ f = open("C:/Python_WorkSpace/PL/code.in", 'r')
 inputs = f.readlines()
 
 for line in inputs:
-    print(line)
-    print(parse(line))
-    print(eval(parse(line)))
+    eval(parse(line))
 
             
 
