@@ -96,7 +96,7 @@ def eval(x, env=global_env):
     "Evaluate an expression in an environment."
     if isinstance(x, Symbol):    # variable reference
         return env.find(x)[x]
-    elif not isinstance(x, List):# constant 
+    elif not isinstance(x, List):# constant
         return x   
     op, *args = x       
     if op == '\'':            # quotation
@@ -108,6 +108,7 @@ def eval(x, env=global_env):
     elif op == 'SETQ':         # definition
         (symbol, exp) = args
         env[symbol] = eval(exp, env)
+        print(env[symbol])
     elif op == 'set!':           # assignment
         (symbol, exp) = args
         env.find(symbol)[symbol] = eval(exp, env)
@@ -117,6 +118,7 @@ def eval(x, env=global_env):
     else:                        # procedure call
         proc = eval(op, env)
         vals = [eval(arg, env) for arg in args]
+        print(vals)
         return proc(*vals)
 
 
