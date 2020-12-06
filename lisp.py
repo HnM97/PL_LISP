@@ -14,7 +14,7 @@ def parse(program):
 
 def tokenize(s):
     "Convert a string into a list of tokens."
-    return s.upper().replace('(',' ( ').replace(')',' ) ').replace('\'', ' \' ').replace('\"', ' \" ').split()
+    return s.upper().replace('(',' ( ').replace(')',' ) ').replace('\'', ' \' ').replace('\"', ' \" ').replace(';','').split()
 
 def read_from_tokens(tokens):
     "Read an expression from a sequence of tokens."
@@ -48,9 +48,6 @@ def standard_env() -> Env:
         '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 
         '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 
         'ABS':     abs,
-        'APPEND':  lambda x, y, z : [x]+y+z,  
-        'apply':   lambda proc, args: proc(*args),
-        'begin':   lambda *x: x[-1],
         'CONS':    lambda x,y: [x] + y,
         'EQ?':     op.is_, 
         'EXPT':    pow,
@@ -59,15 +56,13 @@ def standard_env() -> Env:
         'LIST':    lambda *x: List(x),
         'REVERSE': lambda *x: List(x), 
         'LISTP?':   lambda x: isinstance(x, List), 
-        'map':     map,
-        'max':     max,
-        'min':     min,
-        'not':     op.not_,
+        'MAX':     max,
+        'MIN':     min,
+        'NOT':     op.not_,
         'NULL?':   lambda x: x == [], 
         'NUMBERP?': lambda x: isinstance(x, Number),
 		'PRINT':   print,
-        'procedure?': callable,
-        'round':   round,
+        'ROUND':   round,
         'ZEROP' : lambda x : 'T' if(x==0) else 'ERROR',
         'MINUSP': lambda x : 'T' if(x<0) else 'ERROR',
         'EQUAL' : lambda x,y : 'T' if(x==y) else 'NIL',
@@ -75,7 +70,7 @@ def standard_env() -> Env:
     return env
 
 class Env(dict):
-    "An environment: a dict of {'var':val} pairs, with an outer Env."
+    "An environment: a dict of {'var':val} pairs, with an outer Env." 
     def __init__(self, parms=(), args=(), outer=None):
         self.update(zip(parms, args))
         self.outer = outer
@@ -86,13 +81,6 @@ class Env(dict):
         elif var not in self.outer:
             return "NIL"
         else : self.outer.find(var)
-    
-class Procedure(object):
-    "A user-defined Scheme procedure."
-    def __init__(self, parms, body, env):
-        self.parms, self.body, self.env = parms, body, env
-    def __call__(self, *args): 
-        return eval(self.body, Env(self.parms, args, self.env))
 
 global_env = standard_env()
 
@@ -122,6 +110,7 @@ def eval(x, env=global_env):
             else:
                 print("NIL")
             return eval(exp,env) 
+            
     elif op == 'SETQ':         # definition
         i = 1
         if args[1]=='\'':
@@ -149,9 +138,7 @@ def eval(x, env=global_env):
     elif op == 'set!':           # assignment
         (symbol, exp) = args
         env.find(symbol)[symbol] = eval(exp, env)
-    elif op == 'lambda':         # procedure
-        (parms, body) = args
-        return Procedure(parms, body, env)
+
     elif type(op) == int:
         return x  
 
@@ -322,7 +309,7 @@ for line in inputs:
                 else:
                     print(element, end=" ")
         print(") ",end="\n")
-    elif (type(result)==int) or (type(result)==float) or result=='T' or result == "NIL":
+    elif (type(result)==int) or (type(result)==float) or result=='T' or result == "NIL" or result == True or result == False:
         print(result)
 
     f.close()
