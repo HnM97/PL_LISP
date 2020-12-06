@@ -1,2 +1,1 @@
-(SETQ X 5)
-(LIST 'X X 'Y)
+(REVERSE '(A B C D))
