@@ -68,7 +68,6 @@ def standard_env() -> Env:
 		'PRINT':   print,
         'procedure?': callable,
         'round':   round,
-        'NULL' : lambda x: 'T' if(x==False) else 'NIL',
         'ZEROP' : lambda x : 'T' if(x==0) else 'ERROR',
         'MINUSP': lambda x : 'T' if(x<0) else 'ERROR',
         'EQUAL' : lambda x,y : 'T' if(x==y) else 'NIL',
@@ -255,7 +254,10 @@ def eval(x, env=global_env):
                     return True
         else:
             return "NIL"
-        
+    elif op == 'NULL':
+        if args[0] != '\'':
+            if args[0] not in env:
+                print('T')
     else:                        # procedure call
         proc = eval(op, env)
         vals = []
