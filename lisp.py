@@ -14,7 +14,7 @@ def parse(program):
 
 def tokenize(s):
     "Convert a string into a list of tokens."
-    return s.replace('(',' ( ').replace(')',' ) ').replace('\n', ' ').split()
+    return s.upper().replace('(',' ( ').replace(')',' ) ').replace('\'', ' \' ').split()
 
 def read_from_tokens(tokens):
     "Read an expression from a sequence of tokens."
@@ -47,29 +47,31 @@ def standard_env() -> Env:
     env.update({
         '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 
         '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 
-        'abs':     abs,
-        'append':  op.add,  
+        'ABS':     abs,
+        'APPEND':  lambda x, y, z : [x]+y+z,  
         'apply':   lambda proc, args: proc(*args),
         'begin':   lambda *x: x[-1],
         'CAR':     lambda x: x[0],
         'CDR':     lambda x: x[1:], 
-        'cons':    lambda x,y: [x] + y,
-        'eq?':     op.is_, 
-        'expt':    pow,
-        'equal?':  op.eq, 
-        'length':  len, 
-        'LIST':    lambda *x: List(x), 
-        'list?':   lambda x: isinstance(x, List), 
+        'CONS':    lambda x,y: [x] + y,
+        'EQ?':     op.is_, 
+        'EXPT':    pow,
+        'EQUAL?':  op.eq, 
+        'LENGTH':  len, 
+        'LIST':    lambda *x: List(x),
+        'REVERSE': lambda *x: List(x), 
+        'LISTP?':   lambda x: isinstance(x, List), 
         'map':     map,
         'max':     max,
         'min':     min,
         'not':     op.not_,
-        'null?':   lambda x: x == [], 
-        'number?': lambda x: isinstance(x, Number),  
+        'NULL?':   lambda x: x == [], 
+        'NUMBERP?': lambda x: isinstance(x, Number),  
 		'PRINT':   print,
         'procedure?': callable,
         'round':   round,
-        'symbol?': lambda x: isinstance(x, Symbol),
+        'ATOM': lambda x: isinstance(x, Symbol),
+        'STRINGP' : lambda x : isinstance(x,Symbol),
     })
     return env
 
@@ -94,7 +96,14 @@ global_env = standard_env()
 def eval(x, env=global_env):
     "Evaluate an expression in an environment."
     if isinstance(x, Symbol):    # variable reference
-        return env.find(x)[x]
+        if env.find(x)[x] :
+            return env.find(x)[x]
+        elif x[0]=='\'':
+            x = x.split(sep='\'')[1]
+            return x
+        else :
+            return x
+
     elif not isinstance(x, List):# constant
         return x   
     op, *args = x       
@@ -102,9 +111,19 @@ def eval(x, env=global_env):
         (test, conseq, alt) = args
         exp = (conseq if eval(test, env) else alt)
         return eval(exp, env)
-    elif op == 'SETQ':         # definition        
-        (symbol, exp) = args
-        env[symbol] = eval(exp, env)
+    elif op == 'SETQ':         # definition
+        if args[1]=='\'':
+            symbol = args[0]
+            
+            if type(args[2]) == int:
+                exp = args[2:]
+            else :
+                exp = args[2]
+                print(exp)
+            env[symbol] = exp
+        else:
+            (symbol, exp) = args
+            env[symbol] = eval(exp, env)
         print(symbol)
     elif op == 'set!':           # assignment
         (symbol, exp) = args
@@ -112,10 +131,30 @@ def eval(x, env=global_env):
     elif op == 'lambda':         # procedure
         (parms, body) = args
         return Procedure(parms, body, env)
+    elif type(op) == int:
+        return x  
+    elif op == 'MEMBER':
+        if args[0] == '\'':
+            exp = args[1]
+            symbol = args[2]
+        else:
+            (exp,symbol) = args
+        if exp in env[symbol]:
+            index = env[symbol].index(exp)
+            print(env[symbol][index:])
+        else:
+            print("NILL")
+
+        
     else:                        # procedure call
         proc = eval(op, env)
         vals = []
         flag= False
+        symbol = 0
+        if isinstance(args[0],Symbol) :
+            symbol = args[0]
+            args.pop(0)
+
         for arg in args :
             if arg == '\'':
                 flag = True
@@ -124,6 +163,12 @@ def eval(x, env=global_env):
                 flag = False
             elif flag == False:
                 vals.append(eval(arg,env))
+
+        if op== 'REVERSE':
+            vals.reverse()
+
+        if isinstance(args[0],Symbol) :
+            env[symbol] = proc(*vals)     
         return proc(*vals)
 
 def printList(List : list) :
@@ -158,6 +203,8 @@ for line in inputs:
                 else:
                     print(element, end=" ")
         print(") ",end="\n")
+    elif (type(result)==int) or (type(result)==float):
+        print(result)
 
-f.close()
+    f.close()
 
