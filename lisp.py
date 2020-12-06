@@ -64,12 +64,13 @@ def standard_env() -> Env:
         'min':     min,
         'not':     op.not_,
         'NULL?':   lambda x: x == [], 
+        'NULL' : lambda x: True if isinstance(x,Symbol) else "NIL",
         'NUMBERP?': lambda x: isinstance(x, Number),  
 		'PRINT':   print,
         'procedure?': callable,
         'round':   round,
-        'ATOM': lambda x: isinstance(x, Symbol),
-        'STRINGP' : lambda x : isinstance(x,Symbol),
+        'ATOM': lambda x: True if isinstance(x,Symbol) else False,
+        'STRINGP' : lambda x : True if isinstance(x,Symbol) else False
     })
     return env
 
@@ -80,7 +81,11 @@ class Env(dict):
         self.outer = outer
     def find(self, var):
         "Find the innermost Env where var appears."
-        return self if (var in self) else self.outer.find(var)
+        if var in self:
+            return self
+        elif var not in self.outer:
+            return "NIL"
+        else : self.outer.find(var)
     
 class Procedure(object):
     "A user-defined Scheme procedure."
@@ -130,7 +135,6 @@ def eval(x, env=global_env):
         else:
             (symbol, exp) = args
             env[symbol] = eval(exp, env)
-        print(symbol)
     elif op == 'set!':           # assignment
         (symbol, exp) = args
         env.find(symbol)[symbol] = eval(exp, env)
@@ -234,17 +238,23 @@ def eval(x, env=global_env):
                 symbol = args[0]
                 args.pop(0)
 
-        for arg in args :
-            if arg == '\'':
+
+        for i in range(0,len(args)) :
+            if args[i] == '\'':
+                if type(args[i+1])==list:
+                    for elem in args[i+1]:
+                        vals.append(elem)
+                    break
                 flag = True
             elif flag == True:
-                vals.append(arg)
+                vals.append(args[i])
                 flag = False
             elif flag == False:
-                vals.append(eval(arg,env))
+                vals.append(eval(args[i],env))
 
         if op== 'REVERSE':
             vals.reverse()
+
         if(op not in env):
             if isinstance(args[0],Symbol) :
                 env[symbol] = proc(*vals)     
@@ -282,7 +292,7 @@ for line in inputs:
                 else:
                     print(element, end=" ")
         print(") ",end="\n")
-    elif (type(result)==int) or (type(result)==float):
+    elif (type(result)==int) or (type(result)==float) or type(result)==bool:
         print(result)
 
     f.close()
