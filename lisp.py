@@ -6,7 +6,7 @@ Number = (int, float)     # A Scheme Number is implemented as a Python int or fl
 Atom   = (Symbol, Number) # A Scheme Atom is a Symbol or Number
 List   = list             # A Scheme List is implemented as a Python list
 Exp    = (Atom, List)     # A Scheme expression is an Atom or List
-Env    = dict             # A Scheme environment (defined below) 
+Env    = dict             # A Scheme environment (defined below)  
                             # is a mapping of {variable: value}
 def parse(program):
     "Read a Scheme expression from a string."
@@ -14,7 +14,7 @@ def parse(program):
 
 def tokenize(s):
     "Convert a string into a list of tokens."
-    return s.upper().replace('(',' ( ').replace(')',' ) ').replace('\'', ' \' ').split()
+    return s.upper().replace('(',' ( ').replace(')',' ) ').replace('\'', ' \' ').replace('\"', ' \" ').split()
 
 def read_from_tokens(tokens):
     "Read an expression from a sequence of tokens."
@@ -64,13 +64,14 @@ def standard_env() -> Env:
         'min':     min,
         'not':     op.not_,
         'NULL?':   lambda x: x == [], 
-        'NULL' : lambda x: True if isinstance(x,Symbol) else "NIL",
-        'NUMBERP?': lambda x: isinstance(x, Number),  
+        'NUMBERP?': lambda x: isinstance(x, Number),
 		'PRINT':   print,
         'procedure?': callable,
         'round':   round,
-        'ATOM': lambda x: True if isinstance(x,Symbol) else False,
-        'STRINGP' : lambda x : True if isinstance(x,Symbol) else False
+        'NULL' : lambda x: 'T' if(x==False) else 'NIL',
+        'ZEROP' : lambda x : 'T' if(x==0) else 'ERROR',
+        'MINUSP': lambda x : 'T' if(x<0) else 'ERROR',
+        'EQUAL' : lambda x,y : 'T' if(x==y) else 'NIL',
     })
     return env
 
@@ -123,6 +124,7 @@ def eval(x, env=global_env):
                 print("NIL")
             return eval(exp,env) 
     elif op == 'SETQ':         # definition
+        i = 1
         if args[1]=='\'':
             symbol = args[0]
             
@@ -132,6 +134,16 @@ def eval(x, env=global_env):
                 exp = args[2]
                 print(exp)
             env[symbol] = exp
+        elif args[1]=='\"':
+            args.pop(i)
+            while args[i] != '\"':
+                args[i] = args[i] + " " + args[i+1]
+                args.pop(i+1)
+                i += 1
+            args.pop(i)
+            (symbol, exp) = args
+            env[symbol] = exp
+            print(exp)            
         else:
             (symbol, exp) = args
             env[symbol] = eval(exp, env)
@@ -189,7 +201,7 @@ def eval(x, env=global_env):
             third.pop(index+1)
             printList(third)
         else:
-            print("NILL")
+            print("NIL")
 
     elif op == "ASSOC":
         flag=False
@@ -202,7 +214,7 @@ def eval(x, env=global_env):
                 printList(listelem)   
                 flag = True
         if flag == False:
-            print("NILL")
+            print("NIL")
           
     elif op == 'APPEND':
         while '\'' in args:
@@ -227,6 +239,22 @@ def eval(x, env=global_env):
         else:
             exp = args[1]
             printList(exp[1:])
+    elif op == 'ATOM':
+        if isinstance(args,Atom):
+            return 'T'
+        else:
+            return 'NIL'
+    elif op == 'STRINGP':
+        if isinstance(args[0],Symbol):
+            if args[0] not in env:
+                if args[0]=='\'':
+                    return "NIL"
+                return True
+            else:
+                if type(env[args[0]]) == str :
+                    return True
+        else:
+            return "NIL"
         
     else:                        # procedure call
         proc = eval(op, env)
@@ -292,7 +320,7 @@ for line in inputs:
                 else:
                     print(element, end=" ")
         print(") ",end="\n")
-    elif (type(result)==int) or (type(result)==float) or type(result)==bool:
+    elif (type(result)==int) or (type(result)==float) or result=='T' or result == "NIL":
         print(result)
 
     f.close()
