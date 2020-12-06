@@ -1,1 +1,3 @@
-(NULL X)
+(SETQ X 6) 
+(IF (> X 5) (PRINT X))
+(IF (> X 3) (PRINT X) (+ X 5))
