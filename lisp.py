@@ -229,10 +229,10 @@ def eval(x, env=global_env):
         vals = []
         flag= False
         symbol = 0
-
-        if isinstance(args[0],Symbol) :
-            symbol = args[0]
-            args.pop(0)
+        if(op not in env):
+            if isinstance(args[0],Symbol) :
+                symbol = args[0]
+                args.pop(0)
 
         for arg in args :
             if arg == '\'':
@@ -245,9 +245,9 @@ def eval(x, env=global_env):
 
         if op== 'REVERSE':
             vals.reverse()
-
-        if isinstance(args[0],Symbol) :
-            env[symbol] = proc(*vals)     
+        if(op not in env):
+            if isinstance(args[0],Symbol) :
+                env[symbol] = proc(*vals)     
         return proc(*vals)
 
 def printList(List : list) :

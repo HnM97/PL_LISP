@@ -1,1 +1,2 @@
-(CAR '(X Y Z))
+(SETQ X 5)
+(LIST 'X X 'Y)
