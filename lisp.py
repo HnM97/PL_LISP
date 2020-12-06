@@ -51,8 +51,6 @@ def standard_env() -> Env:
         'APPEND':  lambda x, y, z : [x]+y+z,  
         'apply':   lambda proc, args: proc(*args),
         'begin':   lambda *x: x[-1],
-        'CAR':     lambda x: x[0],
-        'CDR':     lambda x: x[1:], 
         'CONS':    lambda x,y: [x] + y,
         'EQ?':     op.is_, 
         'EXPT':    pow,
@@ -107,10 +105,18 @@ def eval(x, env=global_env):
     elif not isinstance(x, List):# constant
         return x   
     op, *args = x       
-    if op == 'if':             # conditional
-        (test, conseq, alt) = args
-        exp = (conseq if eval(test, env) else alt)
-        return eval(exp, env)
+    if op == 'IF':             # conditional
+        if len(args)==3:
+            (test, conseq, alt) = args
+            exp = (conseq if eval(test, env) else alt)
+            return eval(exp, env)
+        else:
+            (test, conseq) = args
+            if eval(test,env):
+               exp = conseq
+            else:
+                print("NIL")
+            return eval(exp,env) 
     elif op == 'SETQ':         # definition
         if args[1]=='\'':
             symbol = args[0]
@@ -133,6 +139,18 @@ def eval(x, env=global_env):
         return Procedure(parms, body, env)
     elif type(op) == int:
         return x  
+
+    elif op == 'NTH':           
+        index=args[0]
+        nthlist=args[2]
+        if(not isinstance(nthlist,List)):
+            print("ERROR")
+        else:
+            if(index>len(nthlist)):
+                print("NIL")
+            else:
+                return nthlist[index]
+
     elif op == 'MEMBER':
         if args[0] == '\'':
             exp = args[1]
@@ -143,14 +161,75 @@ def eval(x, env=global_env):
             index = env[symbol].index(exp)
             print(env[symbol][index:])
         else:
+            print("NIL")
+            
+    elif op == 'REMOVE':
+        if args[0] == '\'':
+            exp = args[1]
+            symbol = args[2]
+        else:
+            (exp,symbol) = args
+        while exp in env[symbol]:
+            index = env[symbol].index(exp)
+            env[symbol].pop(index)
+        printList(env[symbol])
+
+    elif op == "SUBST":
+        while '\'' in args:
+            index = args.index('\'')
+            args.pop(index)
+        (first, second, third) = args
+        if second in third:
+            index = third.index(second)
+            third.insert(index, first)
+            third.pop(index+1)
+            printList(third)
+        else:
             print("NILL")
 
+    elif op == "ASSOC":
+        flag=False
+        while '\'' in args:
+            index = args.index('\'')
+            args.pop(index)
+        (target, dictionary) = args
+        for listelem in dictionary:
+            if listelem[0] == target:
+                printList(listelem)   
+                flag = True
+        if flag == False:
+            print("NILL")
+          
+    elif op == 'APPEND':
+        while '\'' in args:
+            index = args.index('\'')
+            args.pop(index)
+        sumList= []
+        for elem in args:
+            sumList += elem
+        printList(sumList)
+    
+    elif op == 'CAR':
+        exp = args[1]
+        if type(exp[0])== list:
+            printList(exp[0])
+        else: 
+            print(exp[0])
+    
+    elif op == 'CDR':
+        if args[0]!='\'':
+            symbol = args[0]
+            env[symbol] = env[symbol][1:]
+        else:
+            exp = args[1]
+            printList(exp[1:])
         
     else:                        # procedure call
         proc = eval(op, env)
         vals = []
         flag= False
         symbol = 0
+
         if isinstance(args[0],Symbol) :
             symbol = args[0]
             args.pop(0)
